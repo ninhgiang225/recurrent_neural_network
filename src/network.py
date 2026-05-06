@@ -7,7 +7,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from tf_util import arange_index
+from src.tf_util import arange_index
 
 class DeepNetwork:
     '''The DeepNetwork class is the parent class for specific networks (e.g. LinearDecoder, NonlinearDecoder).

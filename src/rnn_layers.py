@@ -6,10 +6,10 @@ Project 4: Recurrent Neural Networks
 '''
 import tensorflow as tf
 
-import layers
+from src.layers import Layer
 
 
-class GRU(layers.Layer):
+class GRU(Layer):
     '''Gated Recurrent Unit (GRU) layer.
     '''
     def __init__(self, name, units, prev_layer_or_block=None):
@@ -193,14 +193,13 @@ class GRU(layers.Layer):
         if self.wts_update_i2h is None:
             self.init_params(input_shape=x.shape)
 
-        net_in_update = tf.matmul(x, self.wts_update_i2h) + tf.matmul(state, self.wts_update_h2h) + self.update_b
+        U_net_in = tf.matmul(x, self.wts_update_i2h) + tf.matmul(state, self.wts_update_h2h) + self.update_b
 
-        net_in_reset = tf.matmul(x, self.wts_reset_i2h) + tf.matmul(state, self.wts_reset_h2h) + self.reset_b
+        R_net_in = tf.matmul(x, self.wts_reset_i2h) + tf.matmul(state, self.wts_reset_h2h) + self.reset_b
 
-        reset_state = tf.tanh(net_in_reset) * state
-        net_in_cand = tf.matmul(x, self.wts_cand_i2h) + tf.matmul(reset_state, self.wts_cand_h2h) + self.cand_b
+        z_net_in = x @ self.wts_cand_i2h + self.cand_b
 
-        return net_in_update, net_in_reset, net_in_cand
+        return U_net_in, R_net_in, z_net_in
 
     def compute_net_activation(self, update_gate_in, reset_gate_in, cand_in, state):
         '''Computes the state and net activation of the GRU Layer for the current time step.
@@ -225,9 +224,15 @@ class GRU(layers.Layer):
         tf.float32 tensor. shape=(B, H).
             The reset gate computed for the current time step.
         '''
-        update_gate_act = tf.tanh(update_gate_in)
+        U_act = tf.sigmoid(update_gate_in) 
+        R_act = tf.sigmoid(reset_gate_in) 
 
-        reset_gate_act = tf
+        z_state_cand = tf.tanh(cand_in + (R_act*state) @ self.wts_cand_h2h)
+
+        z_state = (1- U_act) * state + U_act * z_state_cand
+
+        return z_state, U_act, R_act
+
 
     def reset_state(self, B):
         '''Returns the reset/default GRU state of 0s for all neurons.
@@ -242,7 +247,7 @@ class GRU(layers.Layer):
         tf.float32 tensor. shape=(B, H).
             The reset/default GRU state of 0s for all neurons.
         '''
-        pass
+        return tf.zeros(shape=(B, self.units))
 
     def __call__(self, x, mask, state=None):
         '''Do a forward pass thru the GRU layer with mini-batch `x`.
@@ -276,7 +281,6 @@ class GRU(layers.Layer):
         a Python list by calling the `list` function — e.g. `list(blah)`.
         '''
         B, T, H_prev = x.shape
-
 
     def __str__(self):
         '''This layer's "ToString" method. Feel free to customize if you want to make the layer description fancy,

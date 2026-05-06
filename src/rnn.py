@@ -7,14 +7,14 @@ Project 4: Recurrent Neural Networks
 import numpy as np
 import tensorflow as tf
 
-import network
-from layers import Dense, Dropout
-from skipgram_layers import Embedding
-from rnn_layers import GRU
+from src.network import DeepNetwork
+from src.layers import Dense, Dropout
+from src.skipgram_layers import Embedding
+from src.rnn_layers import GRU
 
-from tf_util import arange_index
+from src.tf_util import arange_index
 
-class RNN(network.DeepNetwork):
+class RNN(DeepNetwork):
     '''Parent class for all specific types of recurrent neural networks (RNNs).
     '''
     def __init__(self, input_feats_shape, C, pad_token=0, start_token=1, end_token=2):

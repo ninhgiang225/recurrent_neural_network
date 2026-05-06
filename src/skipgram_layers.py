@@ -6,7 +6,7 @@ Project 3: Word Embeddings and Self-Organizing Maps (SOMs)
 '''
 import tensorflow as tf
 
-from layers import Dense
+from src.layers import Dense
 
 class Embedding(Dense):
     '''An Embedding layer, which is just like a regular Dense layer, except it interprets each mini-batch as
