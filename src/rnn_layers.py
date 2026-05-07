@@ -48,6 +48,7 @@ class GRU(Layer):
         self.name = name
         self.units = units
         self.prev_layer_or_block = prev_layer_or_block
+        self.output_shape = None
 
 
     def has_wts(self):
@@ -281,6 +282,39 @@ class GRU(Layer):
         a Python list by calling the `list` function — e.g. `list(blah)`.
         '''
         B, T, H_prev = x.shape
+
+        # initialize state
+        if state is None:
+            state = self.reset_state(B)
+
+        outputs = []
+
+        for t in range(T):
+            x_t = x[:, t, :]          # (B, H_prev)
+            mask_t = mask[:, t, :]    # (B, 1)
+            mask_t = tf.cast(mask_t, tf.float32)
+
+            # 1. compute GRU nets
+            u_in, r_in, c_in = self.compute_net_input(x_t, state)
+
+            # 2. compute activation + new state
+            new_state, _, _ = self.compute_net_activation(
+                u_in, r_in, c_in, state
+            )
+
+            # 3. apply mask (freeze state if padding)
+            state = mask_t * new_state + (1.0 - mask_t) * state
+
+            outputs.append(state)
+
+        # (B, T, H)
+        outputs = tf.stack(outputs, axis=1)
+
+        # set output shape once
+        if self.output_shape is None:
+            self.output_shape = list(outputs.shape)
+
+        return outputs
 
     def __str__(self):
         '''This layer's "ToString" method. Feel free to customize if you want to make the layer description fancy,
