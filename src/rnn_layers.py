@@ -117,7 +117,7 @@ class GRU(Layer):
         4. Use He/Kaiming initialization. See the notes and notebook for refreshers on the gains and the strategy for
         the hidden-to-hidden weights.
         '''
-        _, _, h_prev = input_shape
+        h_prev = input_shape[-1]
         h = self.units 
         
         gain_gate = 1.0      
@@ -320,4 +320,4 @@ class GRU(Layer):
         '''This layer's "ToString" method. Feel free to customize if you want to make the layer description fancy,
         but this method is provided to you. You should not need to modify it.
         '''
-        return f'GRU layer output({self.layer_name}) shape: {self.output_shape}'
+        return f'GRU layer output({self.name}) shape: {self.output_shape}'
