@@ -96,17 +96,15 @@ class RNN(DeepNetwork):
         B, T, C = tf.shape(out_net_act)[0], tf.shape(out_net_act)[1], tf.shape(out_net_act)[2]
 
         if self.loss_name == 'temporal_cross_entropy':
+            log_out_net_act = -tf.math.log(out_net_act)
+            logits_flat = tf.reshape(log_out_net_act, [-1, C])     # (B*T, C)
+            y_flat = tf.reshape(y, [-1])            # (B*T, )
+            mask_flat = tf.reshape(mask, [-1])      # (B*T, )
+            
 
-            logits_flat = tf.reshape(out_net_act, [-1, C])
-            y_flat = tf.reshape(y, [-1])
-            mask_flat = tf.reshape(mask, [-1])
+            loss_per_token = arange_index(logits_flat, y_flat)      # (B*T, )
 
-            loss_per_token = tf.nn.sparse_softmax_cross_entropy_with_logits(
-                labels=tf.cast(y_flat, tf.int32),
-                logits=logits_flat
-            )
-
-            masked_loss = loss_per_token * tf.cast(mask_flat, tf.float32)
+            masked_loss = loss_per_token * mask_flat # (B*T, )
 
             loss = tf.reduce_sum(masked_loss) / (tf.reduce_sum(mask_flat) + eps)
 
@@ -351,7 +349,7 @@ class GRU_RNN1Mini(RNN):
         '''
         super().__init__(input_feats_shape=input_feats_shape, C=C)
         self.embedding_dim = embedding_dim
-        rnn_units = rnn_units
+        self.rnn_units = rnn_units
 
         embedding_layer = Embedding(name='Embedding_Layer', units=embedding_dim, prev_layer_or_block=None)
         gru_layer = GRU(name='Gru_Layer', units=rnn_units, prev_layer_or_block=embedding_layer)
@@ -388,7 +386,7 @@ class GRU_RNN1(GRU_RNN1Mini):
         NOTE: This has the same architecture as GRU_RNN1Mini (only number of units different) so you can build this
         with one line of code :)
         '''
-        pass
+        super(GRU_RNN1, self).__init__(input_feats_shape=input_feats_shape, C=C, embedding_dim=embedding_dim, rnn_units=rnn_units)
 
 
 class GRU_RNN2(RNN):
@@ -421,7 +419,20 @@ class GRU_RNN2(RNN):
         1. Call the superclass constructor to pass along parameters that `DeepNetwork` has in common.
         2. Build out the network like usual. NOTE: you should populate the self.is_recurrent_layer list.
         '''
-        pass
+        super().__init__(input_feats_shape=input_feats_shape, C=C)
+        self.embedding_dim = embedding_dim
+        self.rnn_units = rnn_units
+        self.dropout_rates = dropout_rates
+
+        embedding_layer = Embedding(name='Embedding_Layer', units=embedding_dim, prev_layer_or_block=None)
+        gru_layer_1 = GRU(name='Gru_Layer_1', units=rnn_units[0], prev_layer_or_block=embedding_layer)
+        dropout_layer_1 = Dropout(name='Dropout_Layer_1', rate=dropout_rates[0], prev_layer_or_block=gru_layer_1)
+        gru_layer_2 = GRU(name='Gru_Layer_2', units=rnn_units[1], prev_layer_or_block=dropout_layer_1)
+        dropout_layer_2 = Dropout(name='Dropout_Layer_2', rate=dropout_rates[1], prev_layer_or_block=gru_layer_2)
+        self.output_layer = Dense(name='Dense_Layer', units=C, activation='softmax', prev_layer_or_block=dropout_layer_2, wt_init='he')
+
+        self.layers = [embedding_layer, gru_layer_1, dropout_layer_1, gru_layer_2, dropout_layer_2, self.output_layer]
+        self.is_recurrent_layer=[False, True, False, True, False, False]
 
 
 class GRU_RNN2XL(GRU_RNN2):
@@ -453,7 +464,7 @@ class GRU_RNN2XL(GRU_RNN2):
         NOTE: This has the same architecture as GRU_RNN2 (only number of units / parameters different) so you can build
         this with one line of code :)
         '''
-        pass
+        super(GRU_RNN2, self).__init__(input_feats_shape=input_feats_shape, C=C, embedding_dim=embedding_dim, rnn_units=rnn_units, dropout_rates=dropout_rates)
 
 
 class GRU_RNN3(RNN):
@@ -486,4 +497,19 @@ class GRU_RNN3(RNN):
         1. Call the superclass constructor to pass along parameters that `DeepNetwork` has in common.
         2. Build out the network like usual. NOTE: you should populate the self.is_recurrent_layer list.
         '''
-        pass
+        super().__init__(input_feats_shape=input_feats_shape, C=C)
+        self.embedding_dim = embedding_dim
+        self.rnn_units = rnn_units
+        self.dropout_rates = dropout_rates
+
+        embedding_layer = Embedding(name='Embedding_Layer', units=embedding_dim, prev_layer_or_block=None)
+        gru_layer_1 = GRU(name='Gru_Layer_1', units=rnn_units[0], prev_layer_or_block=embedding_layer)
+        dropout_layer_1 = Dropout(name='Dropout_Layer_1', rate=dropout_rates[0], prev_layer_or_block=gru_layer_1)
+        gru_layer_2 = GRU(name='Gru_Layer_2', units=rnn_units[1], prev_layer_or_block=dropout_layer_1)
+        dropout_layer_2 = Dropout(name='Dropout_Layer_2', rate=dropout_rates[1], prev_layer_or_block=gru_layer_2)
+        gru_layer_3 = GRU(name='Gru_Layer_3', units=rnn_units[2], prev_layer_or_block=dropout_layer_2)
+        dropout_layer_3 = Dropout(name='Dropout_Layer_3', rate=dropout_rates[2], prev_layer_or_block=gru_layer_3)
+        self.output_layer = Dense(name='Dense_Layer', units=C, activation='softmax', prev_layer_or_block=dropout_layer_3, wt_init='he')
+
+        self.layers = [embedding_layer, gru_layer_1, dropout_layer_1, gru_layer_2, dropout_layer_2, gru_layer_3, dropout_layer_3, self.output_layer]
+        self.is_recurrent_layer=[False, True, False, True, False, True, False, False]

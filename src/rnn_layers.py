@@ -28,7 +28,7 @@ class GRU(Layer):
         TODO: Call the superclass constructor, filling in all relevant information. Assign any additional parameters as
         instance vars as needed.
         '''
-
+        super().__init__(layer_name=name, activation=None, prev_layer_or_block=prev_layer_or_block)
         # Wts and bias placeholders
         # Update gate related wts/bias
         self.wts_update_i2h = None
@@ -49,6 +49,8 @@ class GRU(Layer):
         self.units = units
         self.prev_layer_or_block = prev_layer_or_block
         self.output_shape = None
+
+        self.is_training = tf.Variable(False, trainable=False)
 
 
     def has_wts(self):
