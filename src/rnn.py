@@ -294,9 +294,9 @@ class RNN(DeepNetwork):
             net_act, states = self(x_int_tf, states=states)
 
             # TODO: Extract the softmax probs at the final time step
-            logits = net_act[:, -1, :]
-            probs = tf.nn.softmax(logits, axis=-1)
-            out_probs_np = probs.numpy().flatten()
+            # logits = net_act[:, -1, :]
+            # probs = tf.nn.softmax(logits, axis=-1)
+            out_probs_np = net_act[0, -1, :].numpy()
 
             # Draw predicted char index from vocab proportional to the softmax prob
             pred_char_int = rng.choice(np.arange(len(out_probs_np)), p=out_probs_np)
@@ -311,7 +311,7 @@ class RNN(DeepNetwork):
             seq_gen_int.append(pred_char_int)
 
         '''4: TODO: Convert the generated int tokens to chars'''
-        seq_gen_char = [ind2char_map[i] for i in seq_gen_int]
+        seq_gen_char = [ind2char_map[i] for i in seq_gen_int[1:]]
 
         '''5: TODO: Concat the prompt and the generated seq'''
         generated_text = prompt + ''.join(seq_gen_char)
